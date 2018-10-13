@@ -1,4 +1,5 @@
-const GameMaster = artifacts.require('./GameMaster.sol')
+const TransferBot = artifacts.require('./TransferBot.sol')
+const TrueTECH = artifacts.require('./TrueTECH.sol')
 const keccak256 = require('js-sha3').keccak256
 
 module.exports = function (deployer) {
@@ -28,11 +29,10 @@ module.exports = function (deployer) {
   const hashTable = []
   for (const a of players.map(player => Uint8Array.from({ length: (player.length - 2) / 2 }, (e, i) => parseInt(player.substr(i * 2 + 2, 2), 16)))) {
     for (const b of treasures.map(treasure => Uint8Array.from(treasure.secret, (e, i) => e.charCodeAt()))) {
-      const raw = new Uint8Array(a.length + b.length)
-      raw.set(a)
-      raw.set(b, a.length)
-      hashTable.push(keccak256(raw.subarray(raw.length - 20)))
+      const hash1 = new Uint8Array(keccak256.update(b).update(a).arrayBuffer())
+      hashTable.push('0x' + keccak256(hash1.subarray(hash1.length - 20)))
     }
   }
-  deployer.deploy(GameMaster, players, treasures.map(treasure => treasure.value), treasures.map(treasure => treasure.limit), hashTable)
+  deployer.deploy(TransferBot)
+    .then(() => deployer.deploy(TrueTECH, TransferBot.address, players, treasures.map(treasure => treasure.value), treasures.map(treasure => treasure.limit), hashTable))
 }
